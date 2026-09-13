@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Приключение Девочки: Кола против Фанты</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #1e1e24;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            overflow: hidden;
+        }
+
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 400px;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 70%, #82C46C 70%, #4CAF50 100%);
+            border: 4px solid #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        #score-board {
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 8px 16px;
+            border-radius: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+
+        /* Девочка */
+        #player {
+            position: absolute;
+            width: 50px;
+            height: 70px;
+            bottom: 40px;
+            left: 80px;
+            z-index: 5;
+        }
+
+        /* Визуализация девочки через SVG */
+        .girl-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Фанта (Препятствие) */
+        .fanta {
+            position: absolute;
+            width: 35px;
+            height: 55px;
+            bottom: 40px;
+            right: -50px;
+            background: linear-gradient(to right, #FF8C00, #FFA500, #FF8C00);
+            border-radius: 6px;
+            border: 2px solid #D2691E;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            z-index: 4;
+        }
+
+        .fanta::before {
+            content: 'FANTA';
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 7px;
+            font-weight: 900;
+            color: #0045AD;
+            background: #FFD700;
+            padding: 1px 0;
+        }
+
+        /* Кола (Бонус) */
+        .cola {
+            position: absolute;
+            width: 25px;
+            height: 50px;
+            right: -50px;
+            background: linear-gradient(to right, #3d0303, #8B0000, #3d0303);
+            border-radius: 12px 12px 4px 4px;
+            border: 1px solid #1a0000;
+            z-index: 4;
+        }
+
+        .cola::before {
+            content: 'COCA';
+            position: absolute;
+            top: 18px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 6px;
+            font-weight: 900;
+            color: white;
+            background: #e60000;
+            padding: 1px 0;
+        }
+
+        .cola::after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: 7px;
+            width: 11px;
+            height: 5px;
+            background: #ccc;
+            border-radius: 2px;
+        }
+
+        /* Дорога */
+        #ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 40px;
+            background-color: #555;
+            border-top: 4px solid #333;
+        }
+
+        #game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 12px 28px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background-color: #FF4500;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: transform 0.1s, background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #FF6347;
+            transform: scale(1.05);
+        }
+
+        .controls-hint {
+            margin-top: 15px;
+            font-size: 16px;
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="score-board">Кола: <span id="score">0</span></div>
+        
+        <!-- Персонаж Девочка -->
+        <div id="player">
+            <svg class="girl-svg" viewBox="0 0 100 140">
+                <!-- Волосы (сзади) -->
+                <path d="M 20 40 Q 10 80 25 100 Q 50 110 75 100 Q 90 80 80 40 Z" fill="#8B4513"/>
+                <!-- Хвостики -->
+                <circle cx="15" cy="35" r="15" fill="#8B4513"/>
+                <circle cx="85" cy="35" r="15" fill="#8B4513"/>
+                <!-- Голова -->
+                <circle cx="50" cy="45" r="25" fill="#FFE0BD"/>
+                <!-- Челка -->
+                <path d="M 25 35 Q 50 20 75 35 Q 50 40 25 35 Z" fill="#8B4513"/>
+                <!-- Глаза -->
+                <circle cx="40" cy="45" r="3" fill="#000"/>
+                <circle cx="60" cy="45" r="3" fill="#000"/>
+                <!-- Румяна -->
+                <circle cx="33" cy="52" r="4" fill="#FFB6C1" opacity="0.6"/>
+                <circle cx="67" cy="52" r="4" fill="#FFB6C1" opacity="0.6"/>
+                <!-- Улыбка -->
+                <path d="M 45 55 Q 50 60 55 55" stroke="#000" stroke-width="2" fill="none"/>
+                <!-- Платье -->
+                <path d="M 35 70 L 25 110 L 75 110 L 65 70 Z" fill="#FF69B4"/>
+                <!-- Ноги -->
+                <rect x="38" y="110" width="8" height="25" fill="#FFE0BD"/>
+                <rect x="54" y="110" width="8" height="25" fill="#FFE0BD"/>
+                <!-- Обувь -->
+                <ellipse cx="42" cy="135" rx="6" ry="4" fill="#FF1493"/>
+                <ellipse cx="58" cy="135" rx="6" ry="4" fill="#FF1493"/>
+            </svg>
+        </div>
+
+        <div id="ground"></div>
+
+        <!-- Экран Проигрыша -->
+        <div id="game-over-screen" class="hidden">
+            <h1 style="color: #FF4500; font-size: 42px;">ИГРА ОКОНЧЕНА</h1>
+            <p style="font-size: 20px; margin-top: 10px;">Вы врезались в банку Фанты!</p>
+            <p style="font-size: 22px; margin-top: 10px; color: #FFD700;">Собрано Колы: <span id="final-score">0</span></p>
+            <button onclick="restartGame()">Играть снова</button>
+        </div>
+    </div>
+
+    <div class="controls-hint">
+        Нажмите <b>ПРОБЕЛ</b> или <b>СТРЕЛКУ ВВЕРХ</b> для прыжка
+    </div>
+
+    <script>
+        const player = document.getElementById('player');
+        const gameContainer = document.getElementById('game-container');
+        const scoreElement = document.getElementById('score');
+        const finalScoreElement = document.getElementById('final-score');
+        const gameOverScreen = document.getElementById('game-over-screen');
+
+        let isJumping = false;
+        let gravity = 0.9;
+        let playerBottom = 40;
+        let score = 0;
+        let isGameOver = false;
+
+        let gameSpeed = 5;
+        let obstacles = [];
+        let colas = [];
+
+        // Обработка прыжка
+        function handleKeyDown(e) {
+            if ((e.code === 'Space' || e.code === 'ArrowUp') && !isJumping && !isGameOver) {
+                jump();
+            }
+        }
+
+        document.addEventListener('keydown', handleKeyDown);
+
+        // Также поддержка клика/тапа по экрану для мобильных устройств
+        gameContainer.addEventListener('click', () => {
+            if (!isJumping && !isGameOver) {
+                jump();
+            }
+        });
+
+        function jump() {
+            isJumping = true;
+            let jumpHeight = 0;
+            
+            let jumpInterval = setInterval(() => {
+                // Подъем вверх
+                if (jumpHeight >= 150) {
+                    clearInterval(jumpInterval);
+                    
+                    // Падение вниз
+                    let fallInterval = setInterval(() => {
+                        if (playerBottom <= 40) {
+                            clearInterval(fallInterval);
+                            playerBottom = 40;
+                            player.style.bottom = playerBottom + 'px';
+                            isJumping = false;
+                        } else {
+                            playerBottom -= 6;
+                            player.style.bottom = playerBottom + 'px';
+                        }
+                    }, 20);
+                } else {
+                    jumpHeight += 8;
+                    playerBottom += 8;
+                    player.style.bottom = playerBottom + 'px';
+                }
+            }, 20);
+        }
+
+        // Спавн банок Фанты (Препятствия)
+        function spawnFanta() {
+            if (isGameOver) return;
+
+            const fanta = document.createElement('div');
+            fanta.classList.add('fanta');
+            gameContainer.appendChild(fanta);
+
+            let fantaLeft = 800;
+            fanta.style.left = fantaLeft + 'px';
+
+            let timer = setInterval(() => {
+                if (isGameOver) {
+                    clearInterval(timer);
+                    fanta.remove();
+                    return;
+                }
+
+                fantaLeft -= gameSpeed;
+                fanta.style.left = fantaLeft + 'px';
+
+                // Столкновение с девочкой
+                if (fantaLeft > 80 && fantaLeft < 125 && playerBottom < 90) {
+                    clearInterval(timer);
+                    triggerGameOver();
+                }
+
+                // Удаление при выходе за экран
+                if (fantaLeft < -50) {
+                    clearInterval(timer);
+                    fanta.remove();
+                }
+            }, 20);
+
+            // Следующая Фанта через случайный интервал
+            let nextSpawn = Math.random() * 2000 + 1500;
+            setTimeout(spawnFanta, nextSpawn);
+        }
+
+        // Спавн бутылок Колы (Бонусы)
+        function spawnCola() {
+            if (isGameOver) return;
+
+            const cola = document.createElement('div');
+            cola.classList.add('cola');
+            
+            // Кола может появляться на разной высоте (нужно прыгать или просто бежать)
+            let colaBottom = Math.random() > 0.5 ? 45 : 120;
+            cola.style.bottom = colaBottom + 'px';
+
+            gameContainer.appendChild(cola);
+
+            let colaLeft = 800;
+            cola.style.left = colaLeft + 'px';
+
+            let timer = setInterval(() => {
+                if (isGameOver) {
+                    clearInterval(timer);
+                    cola.remove();
+                    return;
+                }
+
+                colaLeft -= gameSpeed;
+                cola.style.left = colaLeft + 'px';
+
+                // Сбор Колы девочкой
+                let playerTopHeight = playerBottom + 70;
+                if (
+                    colaLeft > 80 && colaLeft < 130 &&
+                    (playerBottom <= colaBottom + 30 && playerTopHeight >= colaBottom)
+                ) {
+                    score += 1;
+                    scoreElement.innerText = score;
+                    clearInterval(timer);
+                    cola.remove();
+
+                    // Небольшое ускорение игры при сборе
+                    if (score % 5 === 0) {
+                        gameSpeed += 0.5;
+                    }
+                }
+
+                if (colaLeft < -50) {
+                    clearInterval(timer);
+                    cola.remove();
+                }
+            }, 20);
+
+            let nextSpawn = Math.random() * 1500 + 1000;
+            setTimeout(spawnCola, nextSpawn);
+        }
+
+        function triggerGameOver() {
+            isGameOver = true;
+            finalScoreElement.innerText = score;
+            gameOverScreen.classList.remove('hidden');
+        }
+
+        function restartGame() {
+            // Очистка остатков объектов
+            document.querySelectorAll('.fanta').forEach(el => el.remove());
+            document.querySelectorAll('.cola').forEach(el => el.remove());
+
+            score = 0;
+            gameSpeed = 5;
+            playerBottom = 40;
+            player.style.bottom = playerBottom + 'px';
+            scoreElement.innerText = score;
+            isGameOver = false;
+            gameOverScreen.classList.add('hidden');
+
+            // Запуск спавна элементов
+            setTimeout(spawnFanta, 1000);
+            setTimeout(spawnCola, 500);
+        }
+
+        // Старт игры
+        restartGame();
+    </script>
+</body>
+</html><div style="text-align: center; margin: 20px 0;">
+    <a href="game.html" style="background-color: #FF4500; color: white; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 25px; display: inline-block;">
+        🎮 Сыграть в игру
+    </a>
+</div>
+
